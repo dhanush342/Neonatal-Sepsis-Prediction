@@ -1,0 +1,222 @@
+:root {
+    --primary-color: #4F46E5;
+    --primary-hover: #4338CA;
+    --bg-color: #F3F4F6;
+    --card-bg: #FFFFFF;
+    --text-color: #1F2937;
+    --text-light: #6B7280;
+    --border-color: #E5E7EB;
+    
+    --risk-low-bg: #D1FAE5;
+    --risk-low-text: #065F46;
+    --risk-mod-bg: #FEF3C7;
+    --risk-mod-text: #92400E;
+    --risk-high-bg: #FEE2E2;
+    --risk-high-text: #991B1B;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.container {
+    max-width: 800px;
+    width: 100%;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    padding: 40px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 8px;
+}
+
+header p {
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+/* Form Styles */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 6px;
+}
+
+.form-group input {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    width: 100%;
+    max-width: 300px;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.primary-btn:disabled {
+    background-color: #A5B4FC;
+    cursor: not-allowed;
+}
+
+.error-box {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #FEE2E2;
+    color: #991B1B;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Results Styles */
+.results-section {
+    margin-top: 40px;
+    animation: fadeIn 0.5s ease;
+    text-align: center;
+}
+
+.results-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: var(--text-color);
+}
+
+.result-card {
+    background-color: #F9FAFB;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.result-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.result-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-light);
+    text-transform: uppercase;
+}
+
+.result-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.badge-low {
+    background-color: var(--risk-low-bg);
+    color: var(--risk-low-text);
+}
+
+.badge-mod {
+    background-color: var(--risk-mod-bg);
+    color: var(--risk-mod-text);
+}
+
+.badge-high {
+    background-color: var(--risk-high-bg);
+    color: var(--risk-high-text);
+}
+
+/* Loader */
+.loader {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 30px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

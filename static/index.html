@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neonatal Sepsis Prediction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Neonatal Sepsis Prediction</h1>
+            <p>Enter patient details to get the sepsis risk prediction</p>
+        </header>
+        
+        <main>
+            <form id="predictionForm" class="form-grid">
+                <div class="form-group">
+                    <label for="heart_rate_bpm">Heart Rate (BPM)</label>
+                    <input type="number" step="any" id="heart_rate_bpm" name="heart_rate_bpm" required placeholder="e.g. 140">
+                </div>
+                
+                <div class="form-group">
+                    <label for="spo2_percent">SpO2 (%)</label>
+                    <input type="number" step="any" id="spo2_percent" name="spo2_percent" required placeholder="e.g. 95">
+                </div>
+
+                <div class="form-group">
+                    <label for="temperature_c">Temperature (°C)</label>
+                    <input type="number" step="any" id="temperature_c" name="temperature_c" required placeholder="e.g. 38.0">
+                </div>
+
+                <div class="form-group">
+                    <label for="resp_rate_min">Respiratory Rate (/min)</label>
+                    <input type="number" step="any" id="resp_rate_min" name="resp_rate_min" required placeholder="e.g. 45">
+                </div>
+
+                <div class="form-group">
+                    <label for="crp_mg_l">CRP (mg/L)</label>
+                    <input type="number" step="any" id="crp_mg_l" name="crp_mg_l" required placeholder="e.g. 10.5">
+                </div>
+
+                <div class="form-group">
+                    <label for="wbc_l">WBC (10^9/L)</label>
+                    <!-- Note: Original column has weird encoding, mapping it via JS -->
+                    <input type="number" step="any" id="wbc_l" name="wbc_l" required placeholder="e.g. 15.0">
+                </div>
+
+                <div class="form-group">
+                    <label for="gestational_age_weeks">Gestational Age (weeks)</label>
+                    <input type="number" step="any" id="gestational_age_weeks" name="gestational_age_weeks" required placeholder="e.g. 36">
+                </div>
+
+                <div class="form-group">
+                    <label for="birth_weight_g">Birth Weight (g)</label>
+                    <input type="number" step="any" id="birth_weight_g" name="birth_weight_g" required placeholder="e.g. 2500">
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="predictBtn" class="btn primary-btn">Predict Risk</button>
+                </div>
+            </form>
+
+            <div class="loader" id="loader" style="display: none;"></div>
+            
+            <div id="errorBox" class="error-box" style="display: none;"></div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <h2>Prediction Result</h2>
+                <div class="result-card">
+                    <div class="result-item">
+                        <span class="result-label">Risk Score</span>
+                        <span class="result-value" id="resScore">--</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Risk Category</span>
+                        <span class="badge" id="resCategory">--</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
