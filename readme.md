@@ -49,3 +49,8 @@ The model is trained to find complex, non-linear relationships across 8 key phys
    python app.py
    ```
    The application will be accessible locally at `http://localhost:5000`.
+
+## Output
+
+![Output](image.png)
+![Output 2](image%20copy.png)
