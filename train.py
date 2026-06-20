@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 import joblib
 
@@ -35,20 +35,31 @@ def main():
         stratify=y
     )
 
-    print("Training Random Forest model...")
-    model = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=8,
-        random_state=42
+    print("Training Random Forest model with Grid Search hyperparameter optimization...")
+    rf_classifier = RandomForestClassifier(random_state=42)
+    
+    param_grid = {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [4, 6, 8, 10, None],
+        'min_samples_split': [2, 5],
+        'min_samples_leaf': [1, 2]
+    }
+    
+    grid_search = GridSearchCV(
+        estimator=rf_classifier,
+        param_grid=param_grid,
+        cv=5,
+        scoring="accuracy",
+        n_jobs=-1
     )
+    
+    grid_search.fit(X_train, y_train)
+    
+    print("Best parameters found by Grid Search:", grid_search.best_params_)
+    model = grid_search.best_estimator_
 
-    # Cross Validation
-    scores = cross_val_score(model, X_imputed, y, cv=5, scoring="accuracy")
-    print(f"CV Accuracy: {scores.mean():.4f}")
-
-    model.fit(X_train, y_train)
-
-    print("Evaluating model...")
+    # Evaluation using the best estimator
+    print("Evaluating optimized model...")
     pred = model.predict(X_test)
     prob = model.predict_proba(X_test)[:, 1]
 
@@ -58,13 +69,12 @@ def main():
     print("F1 Score :", f1_score(y_test, pred))
     print("ROC AUC  :", roc_auc_score(y_test, prob))
 
-    print("Saving model and imputer...")
+    print("Saving optimized model, imputer, and feature names...")
     joblib.dump(model, "model.pkl")
     joblib.dump(imputer, "imputer.pkl")
-    # Also save the expected feature names so the app knows the correct order
     joblib.dump(feature_names, "feature_names.pkl")
 
-    print("Done! Model trained and saved.")
+    print("Done! Optimized model trained and saved.")
 
 if __name__ == "__main__":
     main()

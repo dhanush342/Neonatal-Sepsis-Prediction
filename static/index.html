@@ -3,85 +3,476 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neonatal Sepsis Prediction</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>NeoGuard AI - NICU Sepsis Prediction & Telemetry Dashboard</title>
+    <meta name="description" content="AI-powered real-time clinical dashboard for early neonatal sepsis prediction, risk stratification, and patient monitoring in NICU environments.">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for medical icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Plotly.js for premium medical charts -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Neonatal Sepsis Prediction</h1>
-            <p>Enter patient details to get the sepsis risk prediction</p>
-        </header>
-        
-        <main>
-            <form id="predictionForm" class="form-grid">
-                <div class="form-group">
-                    <label for="heart_rate_bpm">Heart Rate (BPM)</label>
-                    <input type="number" step="any" id="heart_rate_bpm" name="heart_rate_bpm" required placeholder="e.g. 140">
+    <div class="app-layout">
+        <!-- Sidebar Navigation & NICU Controls -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-heart-pulse brand-icon"></i>
+                <div class="brand-text">
+                    <h2>NeoGuard AI</h2>
+                    <span>NICU Telemetry Hub</span>
                 </div>
-                
-                <div class="form-group">
-                    <label for="spo2_percent">SpO2 (%)</label>
-                    <input type="number" step="any" id="spo2_percent" name="spo2_percent" required placeholder="e.g. 95">
-                </div>
-
-                <div class="form-group">
-                    <label for="temperature_c">Temperature (°C)</label>
-                    <input type="number" step="any" id="temperature_c" name="temperature_c" required placeholder="e.g. 38.0">
-                </div>
-
-                <div class="form-group">
-                    <label for="resp_rate_min">Respiratory Rate (/min)</label>
-                    <input type="number" step="any" id="resp_rate_min" name="resp_rate_min" required placeholder="e.g. 45">
-                </div>
-
-                <div class="form-group">
-                    <label for="crp_mg_l">CRP (mg/L)</label>
-                    <input type="number" step="any" id="crp_mg_l" name="crp_mg_l" required placeholder="e.g. 10.5">
-                </div>
-
-                <div class="form-group">
-                    <label for="wbc_l">WBC (10^9/L)</label>
-                    <!-- Note: Original column has weird encoding, mapping it via JS -->
-                    <input type="number" step="any" id="wbc_l" name="wbc_l" required placeholder="e.g. 15.0">
-                </div>
-
-                <div class="form-group">
-                    <label for="gestational_age_weeks">Gestational Age (weeks)</label>
-                    <input type="number" step="any" id="gestational_age_weeks" name="gestational_age_weeks" required placeholder="e.g. 36">
-                </div>
-
-                <div class="form-group">
-                    <label for="birth_weight_g">Birth Weight (g)</label>
-                    <input type="number" step="any" id="birth_weight_g" name="birth_weight_g" required placeholder="e.g. 2500">
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" id="predictBtn" class="btn primary-btn">Predict Risk</button>
-                </div>
-            </form>
-
-            <div class="loader" id="loader" style="display: none;"></div>
+            </div>
             
-            <div id="errorBox" class="error-box" style="display: none;"></div>
-
-            <div class="results-section" id="resultsSection" style="display: none;">
-                <h2>Prediction Result</h2>
-                <div class="result-card">
-                    <div class="result-item">
-                        <span class="result-label">Risk Score</span>
-                        <span class="result-value" id="resScore">--</span>
-                    </div>
-                    <div class="result-item">
-                        <span class="result-label">Risk Category</span>
-                        <span class="badge" id="resCategory">--</span>
-                    </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li class="active" id="nav-beds" onclick="switchView('beds-view')">
+                        <i class="fa-solid fa-bed"></i> <span>NICU Beds</span>
+                    </li>
+                    <li id="nav-upload" onclick="switchView('upload-view')">
+                        <i class="fa-solid fa-file-excel"></i> <span>Batch Excel Upload</span>
+                    </li>
+                    <li id="nav-add-baby" onclick="switchView('add-baby-view')">
+                        <i class="fa-solid fa-baby-carriage"></i> <span>Admit Newborn</span>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- Live NICU Stats Summary Panel -->
+            <div class="sidebar-section stats-panel">
+                <h3>NICU Status</h3>
+                <div class="stat-row">
+                    <span>Active Beds:</span>
+                    <span id="stat-active-beds" class="stat-value font-mono">6</span>
                 </div>
+                <div class="stat-row">
+                    <span>Critical / Danger:</span>
+                    <span id="stat-critical-count" class="stat-value text-danger font-mono">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Warnings:</span>
+                    <span id="stat-warning-count" class="stat-value text-warning font-mono">0</span>
+                </div>
+            </div>
+            
+            <!-- Simulation Controller Panel -->
+            <div class="sidebar-section sim-panel">
+                <h3>Simulation Controls</h3>
+                <p class="sim-desc">Simulate live patient telemetry to test predictive alerts in real time.</p>
+                <div class="sim-actions">
+                    <button id="btn-sim-step" class="btn btn-secondary btn-sm" onclick="triggerSimulationStep()">
+                        <i class="fa-solid fa-forward"></i> Simulate Step
+                    </button>
+                    <div class="auto-sim-wrapper">
+                        <label class="switch">
+                            <input type="checkbox" id="chk-auto-sim" onchange="toggleAutoSimulation(this)">
+                            <span class="slider round"></span>
+                        </label>
+                        <span>Auto-Update (5s)</span>
+                    </div>
+                    <button id="btn-sim-reset" class="btn btn-danger-outline btn-xs" onclick="resetSimulation()">
+                        <i class="fa-solid fa-rotate-left"></i> Reset Dashboard
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Header Bar -->
+            <header class="main-header">
+                <div class="header-title">
+                    <h1 id="view-title">NICU Bedside Monitor</h1>
+                    <p id="view-subtitle" class="text-light">Real-time physiological telemetry & sepsis risk calculation</p>
+                </div>
+                <div class="header-status">
+                    <span class="live-indicator"><span class="pulse-dot"></span> LIVE TELEMETRY</span>
+                    <span id="system-time" class="font-mono text-light">12:00:00</span>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <!-- VIEW 1: NICU Beds Grid View -->
+                <section id="beds-view" class="dashboard-view active">
+                    <div class="beds-grid" id="beds-grid-container">
+                        <!-- Loaded dynamically via JavaScript -->
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading bedside telemetry...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 2: Patient Detailed Telemetry Monitor View -->
+                <section id="patient-detail-view" class="dashboard-view">
+                    <div class="back-nav">
+                        <button class="btn-text" onclick="switchView('beds-view')">
+                            <i class="fa-solid fa-arrow-left"></i> Back to Bed Overview
+                        </button>
+                    </div>
+                    
+                    <div class="patient-dashboard-grid">
+                        <!-- Left Panel: Core Metrics & Scores -->
+                        <div class="patient-sidebar-column">
+                            <!-- Demographics Card -->
+                            <div class="glass-card patient-demo-card">
+                                <div class="bed-badge" id="detail-bed-id">Bed 03</div>
+                                <h2 id="detail-patient-name">Baby Liam</h2>
+                                <div class="demo-grid">
+                                    <div class="demo-item">
+                                        <span class="demo-label">Gender</span>
+                                        <span id="detail-gender" class="demo-val">Male</span>
+                                    </div>
+                                    <div class="demo-item">
+                                        <span class="demo-label">Admitted</span>
+                                        <span id="detail-admission" class="demo-val">2026-06-11</span>
+                                    </div>
+                                    <div class="demo-item">
+                                        <span class="demo-label">Gestational Age</span>
+                                        <span id="detail-ga" class="demo-val font-mono">29.0 Weeks</span>
+                                    </div>
+                                    <div class="demo-item">
+                                        <span class="demo-label">Birth Weight</span>
+                                        <span id="detail-bw" class="demo-val font-mono">1100 g</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Composite Sepsis Score Card -->
+                            <div class="glass-card risk-score-card">
+                                <h3>Composite Sepsis Risk</h3>
+                                <div class="risk-gauge-container">
+                                    <div class="radial-progress-large" id="detail-nss-gauge">
+                                        <svg width="180" height="180" viewBox="0 0 180 180">
+                                            <circle cx="90" cy="90" r="70" class="gauge-bg" />
+                                            <circle cx="90" cy="90" r="70" class="gauge-fill" id="detail-nss-circle" />
+                                        </svg>
+                                        <div class="gauge-text">
+                                            <span id="detail-nss-score" class="score-val font-mono">0</span>
+                                            <span class="score-max">/100</span>
+                                            <span id="detail-nss-category" class="score-cat text-danger">HIGH RISK</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="score-comparison">
+                                    <div class="score-sub">
+                                        <span class="sub-label">Clinical NSS</span>
+                                        <span id="detail-nss-val" class="sub-val font-mono">78.0</span>
+                                    </div>
+                                    <div class="score-divider"></div>
+                                    <div class="score-sub">
+                                        <span class="sub-label">Random Forest AI</span>
+                                        <span id="detail-ml-val" class="sub-val font-mono">81.4%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Advanced Clinical Indices Card -->
+                            <div class="glass-card indices-card">
+                                <h3>Clinical Indices</h3>
+                                <div class="indices-grid">
+                                    <div class="index-row">
+                                        <div class="index-info">
+                                            <span class="index-title" title="Temperature Variability Index (TVI) assesses thermal instability from historical records.">TVI (Temp Variability)</span>
+                                            <div class="index-bar-bg"><div class="index-bar-fill" id="bar-tvi"></div></div>
+                                        </div>
+                                        <span id="lbl-tvi" class="index-num font-mono">15.2</span>
+                                    </div>
+                                    <div class="index-row">
+                                        <div class="index-info">
+                                            <span class="index-title" title="HRV Sepsis Index (HSI) measures heart rate characteristics and variability decels.">HSI (HRV Sepsis Index)</span>
+                                            <div class="index-bar-bg"><div class="index-bar-fill" id="bar-hsi"></div></div>
+                                        </div>
+                                        <span id="lbl-hsi" class="index-num font-mono">75.0</span>
+                                    </div>
+                                    <div class="index-row">
+                                        <div class="index-info">
+                                            <span class="index-title" title="Oxygen Instability Score (OIS) evaluates frequency and depth of oximetry desaturations.">OIS (Oxygen Instability)</span>
+                                            <div class="index-bar-bg"><div class="index-bar-fill" id="bar-ois"></div></div>
+                                        </div>
+                                        <span id="lbl-ois" class="index-num font-mono">62.8</span>
+                                    </div>
+                                    <div class="index-row">
+                                        <div class="index-info">
+                                            <span class="index-title" title="Prematurity Risk Score (PRS) estimates baseline neonatal vulnerability from GA and Birth Weight.">PRS (Prematurity Risk)</span>
+                                            <div class="index-bar-bg"><div class="index-bar-fill" id="bar-prs"></div></div>
+                                        </div>
+                                        <span id="lbl-prs" class="index-num font-mono">92.0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right Panel: Vitals Grid, Alerts & Plots -->
+                        <div class="patient-main-column">
+                            <!-- Clinical Active Alerts Area -->
+                            <div class="glass-card alerts-list-card" id="detail-alerts-box">
+                                <h3>Active Clinical Warnings</h3>
+                                <div class="alert-items" id="detail-alerts-container">
+                                    <!-- Dynamic alerts -->
+                                </div>
+                            </div>
+                            
+                            <!-- Detailed Vitals Cards Grid -->
+                            <div class="vitals-dashboard-grid">
+                                <!-- SpO2 -->
+                                <div class="glass-card vital-card" id="card-spo2">
+                                    <div class="vital-header">
+                                        <span>SpO₂ Saturation</span>
+                                        <i class="fa-solid fa-wind vital-icon text-cyan"></i>
+                                    </div>
+                                    <div class="vital-body">
+                                        <span id="val-spo2" class="vital-value font-mono">88</span>
+                                        <span class="vital-unit">%</span>
+                                        <span id="trend-spo2" class="vital-trend text-danger"><i class="fa-solid fa-arrow-down"></i> Low</span>
+                                    </div>
+                                    <span class="vital-range">Target: 90% - 95%</span>
+                                </div>
+                                
+                                <!-- Temperature -->
+                                <div class="glass-card vital-card" id="card-temp">
+                                    <div class="vital-header">
+                                        <span>Temperature</span>
+                                        <i class="fa-solid fa-thermometer vital-icon text-orange"></i>
+                                    </div>
+                                    <div class="vital-body">
+                                        <span id="val-temp" class="vital-value font-mono">37.9</span>
+                                        <span class="vital-unit">°C</span>
+                                        <span id="trend-temp" class="vital-trend text-warning"><i class="fa-solid fa-arrow-up"></i> Elevated</span>
+                                    </div>
+                                    <span class="vital-range">Target: 36.5°C - 37.5°C</span>
+                                </div>
+                                
+                                <!-- Respiratory Rate -->
+                                <div class="glass-card vital-card" id="card-rr">
+                                    <div class="vital-header">
+                                        <span>Respiratory Rate</span>
+                                        <i class="fa-solid fa-lungs vital-icon text-emerald"></i>
+                                    </div>
+                                    <div class="vital-body">
+                                        <span id="val-rr" class="vital-value font-mono">72</span>
+                                        <span class="vital-unit">/min</span>
+                                        <span id="trend-rr" class="vital-trend text-danger"><i class="fa-solid fa-angles-up"></i> Distress</span>
+                                    </div>
+                                    <span class="vital-range">Target: 30 - 60/min</span>
+                                </div>
+                                
+                                <!-- CRP -->
+                                <div class="glass-card vital-card" id="card-crp">
+                                    <div class="vital-header">
+                                        <span>C-Reactive Protein (CRP)</span>
+                                        <i class="fa-solid fa-droplet vital-icon text-red"></i>
+                                    </div>
+                                    <div class="vital-body">
+                                        <span id="val-crp" class="vital-value font-mono">38</span>
+                                        <span class="vital-unit">mg/L</span>
+                                        <span id="trend-crp" class="vital-trend text-danger"><i class="fa-solid fa-trending-up"></i> Rising</span>
+                                    </div>
+                                    <span class="vital-range">Normal: < 5 mg/L</span>
+                                </div>
+
+                                <!-- WBC -->
+                                <div class="glass-card vital-card" id="card-wbc">
+                                    <div class="vital-header">
+                                        <span>WBC Count</span>
+                                        <i class="fa-solid fa-virus-covid vital-icon text-cyan"></i>
+                                    </div>
+                                    <div class="vital-body">
+                                        <span id="val-wbc" class="vital-value font-mono">4.2</span>
+                                        <span class="vital-unit">×10⁹/L</span>
+                                        <span id="trend-wbc" class="vital-trend text-danger"><i class="fa-solid fa-angles-down"></i> Leukopenia</span>
+                                    </div>
+                                    <span class="vital-range">Typical: 9 - 30 ×10⁹/L</span>
+                                </div>
+
+                                <!-- Heart Rate / HRV -->
+                                <div class="glass-card vital-card" id="card-hr">
+                                    <div class="vital-header">
+                                        <span>Heart Rate / HRV</span>
+                                        <i class="fa-solid fa-heart vital-icon text-red"></i>
+                                    </div>
+                                    <div class="vital-body">
+                                        <span id="val-hr" class="vital-value font-mono">178</span>
+                                        <span class="vital-unit">bpm</span>
+                                        <span id="val-hrv-label" class="vital-subtext font-mono text-light">HRV: 22ms</span>
+                                    </div>
+                                    <span class="vital-range">HR Target: 120 - 160 bpm</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Telemetry Historical Trends Plots -->
+                            <div class="glass-card chart-container-card">
+                                <h3>Physiological History & Sepsis Risk Trends</h3>
+                                <div id="vitals-trend-chart" class="plotly-chart-div"></div>
+                            </div>
+
+                            <!-- Manual Vitals Data Entry Form -->
+                            <div class="glass-card record-form-card">
+                                <h3>Record New Bed Vitals (Manual Input)</h3>
+                                <form id="recordVitalsForm" class="record-grid">
+                                    <div class="form-group-sm">
+                                        <label for="rec_heart_rate">Heart Rate (BPM)</label>
+                                        <input type="number" step="any" id="rec_heart_rate" name="heart_rate_bpm" required placeholder="e.g. 140">
+                                    </div>
+                                    <div class="form-group-sm">
+                                        <label for="rec_spo2">SpO₂ (%)</label>
+                                        <input type="number" step="any" id="rec_spo2" name="spo2_percent" required placeholder="e.g. 95">
+                                    </div>
+                                    <div class="form-group-sm">
+                                        <label for="rec_temp">Temperature (°C)</label>
+                                        <input type="number" step="any" id="rec_temp" name="temperature_c" required placeholder="e.g. 37.0">
+                                    </div>
+                                    <div class="form-group-sm">
+                                        <label for="rec_rr">Respiratory Rate (/min)</label>
+                                        <input type="number" step="any" id="rec_rr" name="resp_rate_min" required placeholder="e.g. 45">
+                                    </div>
+                                    <div class="form-group-sm">
+                                        <label for="rec_crp">CRP (mg/L)</label>
+                                        <input type="number" step="any" id="rec_crp" name="crp_mg_l" required placeholder="e.g. 2.5">
+                                    </div>
+                                    <div class="form-group-sm">
+                                        <label for="rec_wbc">WBC (10^9/L)</label>
+                                        <input type="number" step="any" id="rec_wbc" name="wbc_l" required placeholder="e.g. 15.0">
+                                    </div>
+                                    <div class="form-group-sm">
+                                        <label for="rec_hrv">HRV (ms)</label>
+                                        <input type="number" step="any" id="rec_hrv" name="hrv" required placeholder="e.g. 50">
+                                    </div>
+                                    <div class="form-actions-sm">
+                                        <button type="submit" id="btn-submit-record" class="btn btn-primary btn-sm">Record & Recalculate</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 3: Batch Excel Upload View -->
+                <section id="upload-view" class="dashboard-view">
+                    <div class="glass-card excel-upload-card">
+                        <h2>Batch Patient Analysis via Excel</h2>
+                        <p class="text-light">Upload patient logs in Excel format to run bulk machine-learning risk predictions and clinical evaluations.</p>
+                        
+                        <form id="excelUploadForm" class="upload-area">
+                            <div class="drop-zone" id="dropZone">
+                                <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
+                                <p>Drag and drop your Neonatal Sepsis Excel file here or <span>browse files</span></p>
+                                <input type="file" id="excelFile" name="file" accept=".xls,.xlsx" class="file-input">
+                            </div>
+                            <div class="upload-actions">
+                                <button type="submit" id="btn-upload-excel" class="btn btn-primary">Run Batch Prediction</button>
+                            </div>
+                        </form>
+                        
+                        <div class="loader-wrapper" id="upload-loader" style="display: none;">
+                            <div class="spinner"></div>
+                            <p>Analyzing spreadsheet logs...</p>
+                        </div>
+                        
+                        <div class="error-box" id="upload-error" style="display: none;"></div>
+
+                        <!-- Results Table -->
+                        <div class="batch-results-section" id="batchResultsSection" style="display: none;">
+                            <h3>Batch Results & Sepsis Score Reports</h3>
+                            <div class="table-wrapper">
+                                <table class="results-table" id="batchResultsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Patient ID</th>
+                                            <th>Gestational Age</th>
+                                            <th>Birth Weight</th>
+                                            <th>Vitals (SpO2 / HR / Temp / RR)</th>
+                                            <th>CRP / WBC</th>
+                                            <th>AI ML Risk</th>
+                                            <th>Clinical NSS</th>
+                                            <th>Risk Tier</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="batch-results-tbody">
+                                        <!-- Loaded dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 4: Admit Newborn (Add Patient Bed) View -->
+                <section id="add-baby-view" class="dashboard-view">
+                    <div class="glass-card add-patient-card">
+                        <h2>Admit Newborn to NICU</h2>
+                        <p class="text-light">Complete the baseline clinical features and initial vitals to allocate a new telemetry bed.</p>
+                        
+                        <form id="addBabyForm" class="admission-form">
+                            <div class="form-section-title">Infant Demographics</div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="new_name">Patient Name</label>
+                                    <input type="text" id="new_name" name="name" required placeholder="e.g. Baby Alexander">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_gender">Gender</label>
+                                    <select id="new_gender" name="gender" required class="select-input">
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Undetermined</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_ga">Gestational Age (weeks)</label>
+                                    <input type="number" step="any" id="new_ga" name="gestational_age_weeks" required placeholder="e.g. 31.5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_bw">Birth Weight (grams)</label>
+                                    <input type="number" step="any" id="new_bw" name="birth_weight_g" required placeholder="e.g. 1450">
+                                </div>
+                            </div>
+                            
+                            <div class="form-section-title">Initial Baseline Vitals & Labs</div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="new_hr">Heart Rate (BPM)</label>
+                                    <input type="number" step="any" id="new_hr" name="heart_rate_bpm" required placeholder="e.g. 142">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_spo2">SpO₂ (%)</label>
+                                    <input type="number" step="any" id="new_spo2" name="spo2_percent" required placeholder="e.g. 93">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_temp">Temperature (°C)</label>
+                                    <input type="number" step="any" id="new_temp" name="temperature_c" required placeholder="e.g. 36.8">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_rr">Respiratory Rate (/min)</label>
+                                    <input type="number" step="any" id="new_rr" name="resp_rate_min" required placeholder="e.g. 48">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_crp">CRP (mg/L)</label>
+                                    <input type="number" step="any" id="new_crp" name="crp_mg_l" required placeholder="e.g. 3.0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_wbc">WBC Count (10^9/L)</label>
+                                    <input type="number" step="any" id="new_wbc" name="wbc_l" required placeholder="e.g. 12.4">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new_hrv">Heart Rate Variability (HRV ms)</label>
+                                    <input type="number" step="any" id="new_hrv" name="hrv" required placeholder="e.g. 48">
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions-admission">
+                                <button type="submit" id="btn-submit-admission" class="btn btn-primary">Admit Newborn & Start Monitoring</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
             </div>
         </main>
     </div>
     
+    <!-- App JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
